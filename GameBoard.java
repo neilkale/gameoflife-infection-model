@@ -7,6 +7,23 @@ import java.awt.event.MouseListener;
 public class GameBoard extends JPanel {
 
 	/**
+	 * Counter variables used to display information in the Application
+	 */
+	private int numCured = 0;
+	private int numHealthy = 0;
+	private int numInfected = 0;
+	private int numDead = 0;
+	/**
+	 * Number of 'dead' cells at the beginning of the program. Subtract this value from counted numDead to get true numDead value.
+	 */
+	private int numDeadInitial;
+	
+	/**
+	 * Set to 0 during setup. Resets when the board is reset.
+	 */
+	public int numDays; 
+	
+	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
@@ -83,12 +100,14 @@ public class GameBoard extends JPanel {
 	 * first call to setupPanel which will determine the size of the panel.
 	 */
 	public void setupPanel(int pWidth, int pHeight) {
+		numDays = 0;
+		numDeadInitial = 0;
 		inSetup = true;
 		this.panelWidth = pWidth;
 		this.panelHeight = pHeight;
 		this.setSize(panelWidth, panelHeight);
 		cellWidth = panelWidth / numCellsWide;
-		cellHeight = panelHeight / numCellsHigh;
+		cellHeight = panelHeight / numCellsHigh + 1;
 		this.addMouseListener(userCellSelectionListener = new MouseListener() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -146,6 +165,7 @@ public class GameBoard extends JPanel {
 
 	public void drawLines(Graphics g) {
 		// vertical lines
+		g.setColor(Color.WHITE);
 		for (double i = 1; i < numCellsWide; i++) {
 			int vertLineX = (int) (i * cellWidth);
 			g.drawLine(vertLineX, 0, vertLineX, panelHeight);
@@ -162,18 +182,26 @@ public class GameBoard extends JPanel {
 	 */
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
+		clearCounters();
 		drawLines(g);
 		for(int i = 0; i < cellArr.length; i++) {
 			for(int j = 0; j < cellArr[0].length; j++) {
 				Cell currentCell = cellArr[i][j];
-				if (currentCell.isAlive() && currentCell.isHealthy()) {
+				if(currentCell.isCured()) {
 					paintCell(g, currentCell, Color.GREEN);
+					numCured++;
 				}
-				else if (currentCell.isAlive() && currentCell.isInfected()) {
-					paintCell(g, currentCell, Color.RED);
-				}
-				else {
+				else if (currentCell.isHealthy()) {
 					paintCell(g, currentCell, Color.WHITE);
+					numHealthy++;
+				}
+				else if (currentCell.isInfected()) {
+					paintCell(g, currentCell, Color.RED);
+					numInfected++;
+				}
+				else if (currentCell.isDead()){
+					paintCell(g, currentCell, Color.BLACK);
+					numDead++;
 				}
 			}
 		}
@@ -184,7 +212,8 @@ public class GameBoard extends JPanel {
 			Cell currentCell = cellArr[cellX][cellY];
 			if (currentCell.isDead()) {
 				currentCell.setAlive();
-				paintCell(g, currentCell, Color.GREEN);
+				paintCell(g, currentCell, Color.WHITE);
+				numDeadInitial--;
 			}
 			else if (currentCell.isAlive() && currentCell.isHealthy()){
 				currentCell.setInfected();
@@ -192,7 +221,8 @@ public class GameBoard extends JPanel {
 			}
 			else if (currentCell.isAlive() && currentCell.isInfected()){
 				currentCell.setDead();
-				paintCell(g, currentCell, Color.WHITE);
+				paintCell(g, currentCell, Color.BLACK);
+				numDeadInitial++;
 			}
 			paintUserPoint = false;
 		}
@@ -462,11 +492,71 @@ public class GameBoard extends JPanel {
 		for(int i = 0; i < seedCellArr.length; i++) {
 			for(int j = 0; j < seedCellArr[0].length; j++) {
 				Cell currentCell = seedCellArr[i][j];
+				if(i == seedCellArr.length/2 && j == seedCellArr[0].length/2) currentCell.setInfected();
+				else {
+					
 				if(Math.random() < probAlive) currentCell.setAlive();
-				else currentCell.setDead();
+				else {
+					currentCell.setDead();
+					numDeadInitial++;
+				}
+				}
 			}
 		}
 	}
+	
+	/**
+	 * Clears the counter variables. Executed during each paint step, before counting.
+	 */
+	private void clearCounters() {
+		numCured = 0;
+		numHealthy = 0;
+		numInfected = 0;
+		numDead = 0;
+	}
+
+	/**
+	 * @return the numCured
+	 */
+	public int getNumCured() {
+		return numCured;
+	}
+	
+	/**
+	 * @return the numHealthy
+	 */
+	public int getNumHealthy() {
+		return numHealthy;
+	}
+
+	/**
+	 * @return the numInfected
+	 */
+	public int getNumInfected() {
+		return numInfected;
+	}
+
+	/**
+	 * @return the numDead
+	 */
+	public int getNumDead() {
+		return numDead-numDeadInitial;
+	}
+
+	/**
+	 * @return the numWeeks
+	 */
+	public int getNumWeeks() {
+		return numDays;
+	}
+
+	/**
+	 * @param numDays the numWeeks to set
+	 */
+	public void addWeeks(int numToAdd) {
+		this.numDays += numToAdd;
+	}
+	
 	
 	
 }

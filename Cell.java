@@ -1,3 +1,5 @@
+import java.util.Random;
+
 /**
  * 
  * @author Neil Kale
@@ -5,15 +7,22 @@
  */
 public class Cell {
 
-	/**
+	/*****
+	 * CORONA MODEL ***
 	 * TODO: Add functionality for various other diseases, which will change these values. Account for the curve of death - higher chance
 	 * as you approach the middle of the disease. Have the chance ebb away to 0, at which point the cell is considered "recovered."
 	 * Differentiate between dead and recovered cells.
 	 * 
 	 * Current values are place-holders based on world-wide data available on COVID-19.
 	 */
-	public static final double COVID_CHANCE_OF_DEATH = 0.00;
-	public static final double COVID_CHANCE_OF_RECOVERY = 0.00;
+	public static final double COVID_CHANCE_OF_DEATH = 0.05;
+	
+	/*****
+	 * CORONA MODEL ***
+	 * This models some people being less prone to infection (negative infection constant) and some people being more prone to infection (positive infection constant)
+	 * The value ranges on a normal curve centered at 0, from -0.167 to +1.67
+	 */
+	public final double IMMUNITY = (new Random()).nextGaussian()/6;
 	
 	/**
 	 * Whether or not the cell is alive (true means alive, false means dead)
@@ -25,7 +34,23 @@ public class Cell {
 	 * false means healthy)
 	 */
 	private boolean infected;
-
+	
+	/*****
+	 * CORONA MODEL *** A cured cell can never be infected again.
+	 */
+	private boolean cured;
+	
+	/*****
+	 * CORONA MODEL *** Number of days infected. At 10 days, the cell either is cured or dies.
+	 */
+	private int daysInfected;
+	
+	/*****
+	 * CORONA MODEL *** 
+	 * The day on which the cell either dies or is cured.
+	 */
+	private final int FINAL_DAY = 10 + (int) (new Random()).nextGaussian();
+	
 	/**
 	 * The x position of the cell, always a positive integer.
 	 */
@@ -38,7 +63,8 @@ public class Cell {
 
 	/*****
 	 * CORONA MODEL *** The number of alive neighbors this cell has. This should
-	 * range from 0 to 8, inclusive.
+	 * range from 0 to 8, inclusive. This is only needed for the Game of Life portion of the model.
+	 * @deprecated
 	 */
 	private int numNeighborsAlive;
 
@@ -59,8 +85,10 @@ public class Cell {
 		numNeighborsAlive = 0;
 		xPos = x;
 		yPos = y;
-		alive = false;
+		alive = true;
 		infected = false;
+		cured = false;
+		daysInfected = 0;
 	}
 
 	/**
@@ -76,29 +104,28 @@ public class Cell {
 		yPos = c.yPos;
 		alive = c.alive;
 		infected = c.infected;
+		cured = c.cured;
+		daysInfected = c.daysInfected;
 	}
 
-	/*****
-	 * CORONA MODEL *** Determines whether the cell should become infected or not.
+	/***** CORONA MODEL *** 
+	 * Determines whether the cell should become infected or not.
 	 */
 	public void determineLifeStatus() {
 		if (alive) {
-			if (numNeighborsAlive < 2)
-				setDead(); // underpopulation
-			else if (numNeighborsAlive == 2 || numNeighborsAlive == 3)
-				; // stayin' alive
-			else if (numNeighborsAlive > 3)
-				setDead(); // overpopulation
-
 			if (!infected) {
-				if(numNeighborsInfected > 0) setInfected();
-			} else {
-				double chanceOfElimination = COVID_CHANCE_OF_DEATH + COVID_CHANCE_OF_RECOVERY;
-				if(Math.random() < chanceOfElimination) setDead();
+				if(!cured && numNeighborsInfected > 0 && Math.random() < (double) numNeighborsInfected/8 + IMMUNITY) setInfected();
+			}
+			else if (infected) {
+				
+				if(daysInfected == FINAL_DAY) {
+					if(Math.random() < COVID_CHANCE_OF_DEATH) setDead();
+					else setCured();
+				}
+				
+				daysInfected++;
 			}
 		}
-		else if (numNeighborsAlive == 3)
-			setAlive(); // reproduction
 	}
 
 	/**
@@ -133,11 +160,20 @@ public class Cell {
 		infected = true;
 		alive = true;
 	}
+	
+	/*****
+	 * CORONA MODEL *** If the cell is cured, it can no longer be infected.
+	 */
+	
+	public void setCured() {
+		infected = false;
+		cured = true;
+	}
 
 	/**
 	 * Gets the current life status of the cell.
 	 * 
-	 * @return {@link #isAlive()}
+	 * @return {@link #alive()}
 	 */
 	public boolean isAlive() {
 		return alive;
@@ -146,7 +182,7 @@ public class Cell {
 	/**
 	 * Gets the current life status of the cell.
 	 * 
-	 * @return the opposite of {@link #isAlive()}
+	 * @return the opposite of {@link #alive()}
 	 */
 	public boolean isDead() {
 		return !alive;
@@ -158,16 +194,21 @@ public class Cell {
 	 * @return {@link #isAlive()}
 	 */
 	public boolean isInfected() {
-		return infected;
+		return infected&&alive;
 	}
 
 	/*****
-	 * CORONA MODEL *** Gets the current life status of the cell.
-	 * 
-	 * @return {@link #isAlive()}
+	 * CORONA MODEL *** A healthy cell is neither infected nor dead.
 	 */
 	public boolean isHealthy() {
-		return !infected;
+		return !infected&&alive;
+	}
+	
+	/*****
+	 * CORONA MODEL *** Gets whether the cell is cured or not.
+	 */
+	public boolean isCured() {
+		return cured;
 	}
 
 	/**
