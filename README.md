@@ -1,1 +1,2 @@
-# coronavirus-model
+# Modelling Infection with Conway's Game of Life
+The current COVID-19 situation inspired me to develop this model. However, the goal isn’t to model a specific disease in a specific population, but rather to understand how variables such as immunity, population density, virulence, and mortality affect disease spread. I've discussed some of those trends on my blog here: https://blog.sunnysideup.life/?p=124.
